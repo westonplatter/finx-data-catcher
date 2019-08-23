@@ -1,0 +1,67 @@
+service: finx-data-catcher
+
+provider:
+  name: aws
+  runtime: python3.6
+  environment:
+    ALPHAADVANTAGE: ${env:ALPHAADVANTAGE}
+    BUCKETNAME: ${file(configs/${self:provider.stage}.json):bucketname}
+    WRITE_TO_S3: 'true'
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "DataLake" } ] ] }
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "Ref" : "DataLake"
+            - "/*"
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "Ref" : "ServerlessDeploymentBucket"
+            - "/*"
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+
+package:
+  exclude:
+    - node_modules/**
+    - local_data/**
+    - configs/**
+
+functions:
+  hello:
+    handler: handler.hello
+  fetch:
+    handler: handler.fetch
+
+resources:
+  Resources:
+    DataLake:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${file(configs/${self:provider.stage}.json):bucketname}
+  Outputs:
+    DataLakeBucketName:
+      Value:
+        Ref: DataLake
