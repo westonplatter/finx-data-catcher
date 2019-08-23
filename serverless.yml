@@ -54,6 +54,10 @@ functions:
     handler: handler.hello
   fetch:
     handler: handler.fetch
+    events:
+    - schedule:
+        rate: cron(0 2 * * ? *)
+        enabled: true
 
 resources:
   Resources:
