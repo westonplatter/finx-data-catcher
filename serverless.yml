@@ -3,10 +3,11 @@ service: finx-data-catcher
 provider:
   name: aws
   runtime: python3.6
+  memorySize: 512
   environment:
     ALPHAADVANTAGE: ${env:ALPHAADVANTAGE}
     BUCKETNAME: ${file(configs/${self:provider.stage}.json):bucketname}
-    WRITE_TO_S3: 'true'
+    WRITE_TO_S3: ${env:WRITE_TO_S3, 'true'}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -54,6 +55,7 @@ functions:
     handler: handler.hello
   fetch:
     handler: handler.fetch
+    timeout: 120
     events:
     - schedule:
         rate: cron(0 2 * * ? *)
