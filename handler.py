@@ -21,50 +21,56 @@ def hello(event, context):
 
 
 def fetch(event, context):
-    symbol = "SPY"
-    interval = "1min"
+    symbols = ["SPY", "TLT", "QQQ", "EEM", "USO"]
+    symbol_files = []
 
-    params = {
-        "symbol": symbol,
-        "apikey": environ['ALPHAADVANTAGE'],
-        "function": "TIME_SERIES_INTRADAY",
-        "interval": interval,
-        "outputsize": "full"
-    }
+    for symbol in symbols:
+        interval = "1min"
 
-    url = "https://www.alphavantage.co/query"
-    res = requests.get(url, params=params)
+        params = {
+            "symbol": symbol,
+            "apikey": environ['ALPHAADVANTAGE'],
+            "function": "TIME_SERIES_INTRADAY",
+            "interval": interval,
+            "outputsize": "full"
+        }
 
-    key = f"Time Series ({interval})"
-    ts = res.json()[key]
+        url = "https://www.alphavantage.co/query"
+        res = requests.get(url, params=params)
 
-    result = []
+        key = f"Time Series ({interval})"
+        ts = res.json()[key]
 
-    for time_str, data in ts.items():
-        dp = {"timestamp": time_str}
-        for k,v in data.items():
-            field = k.split(" ")[1]
-            dp[field] = v
-        result.append(dp)
+        result = []
 
-    df = pd.DataFrame(result)
+        for time_str, data in ts.items():
+            dp = {"timestamp": time_str, "symbol": symbol}
+            for k,v in data.items():
+                field = k.split(" ")[1]
+                dp[field] = v
+            result.append(dp)
 
-    fn = f"{symbol}_{interval}.parquet.gzip"
-    dt_str = dt.today().strftime('%Y-%m-%d')
+        df = pd.DataFrame(result)
 
-    write_to_s3 = (environ['WRITE_TO_S3'] == 'true')
+        fn = f"{symbol}_{interval}.parquet.gzip"
+        dt_str = dt.today().strftime('%Y-%m-%d')
 
-    if write_to_s3:
-        file_url = f"s3://{environ['BUCKETNAME']}/{dt_str}/{fn}"
-    else:
-        from os import makedirs, path
-        file_url = f'local_data/{dt_str}/{fn}'
-        makedirs(path.dirname(file_url), exist_ok=True)
+        write_to_s3 = (environ['WRITE_TO_S3'] == 'true')
 
-    df.to_parquet(file_url, compression='gzip')
+        if write_to_s3:
+            file_url = f"s3://{environ['BUCKETNAME']}/{dt_str}/{fn}"
+        else:
+            from os import makedirs, path
+            file_url = f'local_data/{dt_str}/{fn}'
+            makedirs(path.dirname(file_url), exist_ok=True)
+
+        df.to_parquet(file_url, compression='gzip')
+        symbol_files.append(file_url)
+
 
     body = {
-        "message": f"Successfully saved {symbol} data to {file_url}"
+        "message": f"Successfully saved {symbols} data",
+        "symbol_files": symbol_files
     }
     response = {
         "statusCode": 200,
