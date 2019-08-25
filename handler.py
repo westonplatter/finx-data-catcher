@@ -58,14 +58,20 @@ def fetch(event, context):
         write_to_s3 = (environ['WRITE_TO_S3'] == 'true')
 
         if write_to_s3:
-            file_url = f"s3://{environ['BUCKETNAME']}/{dt_str}/{fn}"
+            s3 = boto3.resource('s3')
+            filename = f"{dt_str}/{fn}.json"
+            s3object = s3.Object(environ['BUCKETNAME'], filename)
+            json_buffer = StringIO()
+            df.to_json(json_buffer)
+            s3_resource = boto3.resource('s3')
+            s3_resource.Object(environ['BUCKETNAME'], filename).put(Body=json_buffer.getvalue())
         else:
             from os import makedirs, path
-            file_url = f'local_data/{dt_str}/{fn}'
-            makedirs(path.dirname(file_url), exist_ok=True)
+            filename = f'local_data/{dt_str}/{fn}'
+            makedirs(path.dirname(filename), exist_ok=True)
+            df.to_json(filename)
 
-        df.to_json(file_url)
-        symbol_files.append(file_url)
+        symbol_files.append(filename)
 
 
     body = {
