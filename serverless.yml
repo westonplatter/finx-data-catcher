@@ -4,6 +4,7 @@ provider:
   name: aws
   runtime: python3.6
   memorySize: 512
+  logRetentionInDays: 14
   environment:
     ALPHAADVANTAGE: ${env:ALPHAADVANTAGE}
     BUCKETNAME: ${file(configs/${self:provider.stage}.json):bucketname}
