@@ -59,7 +59,7 @@ def fetch(event, context):
 
         if write_to_s3:
             s3 = boto3.resource('s3')
-            filename = f"{dt_str}/{fn}.json"
+            filename = f"{dt_str}/{fn}"
             s3object = s3.Object(environ['BUCKETNAME'], filename)
             json_buffer = StringIO()
             df.to_json(json_buffer)
