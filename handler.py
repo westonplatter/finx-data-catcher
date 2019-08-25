@@ -52,7 +52,7 @@ def fetch(event, context):
 
         df = pd.DataFrame(result)
 
-        fn = f"{symbol}_{interval}.parquet.gzip"
+        fn = f"{symbol}_{interval}.json"
         dt_str = dt.today().strftime('%Y-%m-%d')
 
         write_to_s3 = (environ['WRITE_TO_S3'] == 'true')
@@ -64,7 +64,7 @@ def fetch(event, context):
             file_url = f'local_data/{dt_str}/{fn}'
             makedirs(path.dirname(file_url), exist_ok=True)
 
-        df.to_parquet(file_url, compression='gzip')
+        df.to_json(file_url)
         symbol_files.append(file_url)
 
 
